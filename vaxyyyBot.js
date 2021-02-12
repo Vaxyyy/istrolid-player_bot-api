@@ -62,7 +62,18 @@ const emit = new EventEmitter();
 
 emit.addEventListener(
     'istrolid-chat-message',
-    (event) => vaxyyyBot.on_message(event.detail)
+    (event) => {
+        for (let i in vaxyyyBot.bots) {
+            let bot = vaxyyyBot.bots[i];
+            try {
+                if (bot && typeof bot.message === "function") {
+                    bot.message(event.detail);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
 );
 
 var hook = hook || {
@@ -76,57 +87,66 @@ let _fleet = {
 
 var vaxyyyBot = vaxyyyBot || {
 
-    enabled: true,
-    anti_afk: true, // dose what it says stops you from been afk or disconnecting
+    bots: [],
+    enabled: false,
+    anti_afk: false, // dose what it says stops you from been afk or disconnecting
     host: false,
     step: 0,
     messageQueue: [],
     last_msg: {},
 
     tick: function () {
-        if (this.enabled) {
-            if (this.step % 17 === 0) {
-                let queue = this.messageQueue[0];
+        if (vaxyyyBot.enabled) {
+            if (vaxyyyBot.step % 17 === 0) {
+                let queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
                         text: queue.text,
                         channel: queue.channel
                     });
-                    this.messageQueue.shift();
+                    vaxyyyBot.messageQueue.shift();
                 }
-                if (this.anti_afk) {
+                if (vaxyyyBot.anti_afk) {
                     if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) return rootNet.connect();
                     network.send(`mouseMove`, [0, 0], false);
                 }
-            } else if (this.step % 8 === 0) {
+            } else if (vaxyyyBot.step % 8 === 0) {
+                vaxyyyBot.host = commander.host;
+
+                for (let i in vaxyyyBot.bots) {
+                    let bot = vaxyyyBot.bots[i];
+                    try {
+                        if (bot && typeof bot.run === "function") {
+                            bot.run();
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+
                 let data = chat.lines[chat.lines.length - 1];
                 if (data === undefined) return;
-                if (this.last_msg === data) return;
-                this.last_msg = data;
+                if (vaxyyyBot.last_msg === data) return;
+                vaxyyyBot.last_msg = data;
 
                 emit.dispatchEvent(
-                    new CustomEvent('istrolid-chat-message', { detail: data })
+                    new CustomEvent('istrolid-chat-message', {
+                        detail: data
+                    })
                 );
-
-                this.host = commander.host;
-                try {
-                    this.run();
-                } catch(e) {
-                    console.error(e);
-                }
             }
-            this.step++;
+            vaxyyyBot.step++;
         } else {
-            this.step = 0;
+            vaxyyyBot.step = 0;
         }
     },
 
-    on_message: function (data) {
-        console.log(data);
+    add_bot: function (bot) {
+        vaxyyyBot.bots.push(bot);
     },
-    
-    run: function () {
-        
+
+    clear_bots: function() {
+        vaxyyyBot.bots = [];
     },
 }
 
@@ -158,7 +178,7 @@ var order = {
     set_fleet: async function (location) {
         location = check(Object, location);
         location = compare_obj(location, _fleet);
-        
+
         commander.fleet.selection = location;
         account.save();
     },
@@ -288,7 +308,7 @@ var order = {
      */
     copy_fleet: async function (from, to) {
         let i, j, keyF, keyT;
-        
+
 
         from = compare_obj(from, _fleet);
         to = compare_obj(to, _fleet);

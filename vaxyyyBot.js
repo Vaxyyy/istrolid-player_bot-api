@@ -2,7 +2,7 @@
  * This is an javascript player bot api for istrolid
  */
 
- /**
+/**
  * checks parameter 
  * 
  * @param {constructor} type - type to compare 
@@ -42,7 +42,7 @@ function check(type, value, set, i) {
  */
 function check_list(parameter_types, values) {
     if (parameter_types.length !== values.length) throw new Error(`parameters has ${parameter_types.length} parameters, but the values has ${values.length}`);
-    for (let i = 0; i < values.length; i++) check(parameter_types[i], values[i], undefined, i)
+    for (let i = 0; i < values.length; i++) check(parameter_types[i], values[i], undefined, i);
 };
 
 function compare_obj(obj, need) {
@@ -52,26 +52,40 @@ function compare_obj(obj, need) {
     if (obj_length !== need_length) throw new Error(`need has ${need_length} values, but the obj has ${obj_length}`);
 
     for (let i in need) {
-        if (i in obj) {
-        } else throw new Error("Compare : Expecting " + i);
+        if (!(i in obj)) throw new Error("Compare : Expecting " + i);
     }
     return obj;
 };
+
+class EventEmitter extends EventTarget {};
+const emit = new EventEmitter();
+
+emit.addEventListener(
+    'istrolid-chat-message',
+    (event) => vaxyyyBot.on_message(event.detail)
+);
 
 var hook = hook || {
     timer: setInterval(() => vaxyyyBot.tick(), 60)
 };
 
+let _fleet = {
+    tab: null,
+    row: null
+};
+
 var vaxyyyBot = vaxyyyBot || {
+
     enabled: true,
-    anti_afk: true,
-    host: commander.host,
+    anti_afk: true, // dose what it says stops you from been afk or disconnecting
+    host: false,
     step: 0,
     messageQueue: [],
+    last_msg: {},
 
     tick: function () {
-        if (vaxyyyBot.enabled) {
-            if (vaxyyyBot.step % 17 === 0) {
+        if (this.enabled) {
+            if (this.step % 17 === 0) {
                 let queue = this.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
@@ -80,16 +94,40 @@ var vaxyyyBot = vaxyyyBot || {
                     });
                     this.messageQueue.shift();
                 }
-                if (vaxyyyBot.anti_afk) {
+                if (this.anti_afk) {
                     if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) return rootNet.connect();
                     network.send(`mouseMove`, [0, 0], false);
                 }
+            } else if (this.step % 8 === 0) {
+                let data = chat.lines[chat.lines.length - 1];
+                if (data === undefined) return;
+                if (this.last_msg === data) return;
+                this.last_msg = data;
+
+                emit.dispatchEvent(
+                    new CustomEvent('istrolid-chat-message', { detail: data })
+                );
+
+                this.host = commander.host;
+                try {
+                    this.run();
+                } catch(e) {
+                    console.error(e);
+                }
             }
-            vaxyyyBot.step++;
+            this.step++;
         } else {
-            vaxyyyBot.step = 0;
+            this.step = 0;
         }
-    }
+    },
+
+    on_message: function (data) {
+        console.log(data);
+    },
+    
+    run: function () {
+        
+    },
 }
 
 var order = {
@@ -115,16 +153,13 @@ var order = {
      * @warning this will save your account
      * Sets current fleet
      *
-     * @param {number} row - row number
-     * @param {string} tab - tab name
+     * @param {object} location - location
      */
-    set_fleet: async function (row, tab) {
-        check_list([Number, String], [row, tab])
-
-        commander.fleet.selection = {
-            "row": row,
-            "tab": tab
-        };
+    set_fleet: async function (location) {
+        location = check(Object, location);
+        location = compare_obj(location, _fleet);
+        
+        commander.fleet.selection = location;
         account.save();
     },
 
@@ -156,7 +191,7 @@ var order = {
     set_mode: function (mode) {
         if (!vaxyyyBot.host) throw new Error("not host");
 
-        mode = check(String, mode)
+        mode = check(String, mode);
         network.send("configGame", {
             type: mode
         });
@@ -165,10 +200,10 @@ var order = {
     /**
      * Join side
      * 
-     * @param {string} side - name of side to join | alpha, beta
+     * @param {string} side - name of side to join | alpha, beta, spectators
      */
     join_side: function (side) {
-        side = check(String, side)
+        side = check(String, side);
         network.send("switchSide", side);
     },
 
@@ -178,51 +213,69 @@ var order = {
      * @param {string} name - name of server to join
      */
     join_server: function (name) {
-        name = check(String, name)
+        name = check(String, name);
         battleMode.joinServer(name);
     },
 
     /**
      * Kick player
      * 
-     * @param {number|string} player - number | name of player to kick
+     * @param {number|string} player - player to kick
+     * @param {string} type - number || name
      */
-    kick_player: function (player) {
+    kick_player: function (player, type) {
         if (!vaxyyyBot.host) throw new Error("not host");
+        type = check(String, type);
 
-        if (typeof player === "number") {
+        if (type === "number") {
+            player = check(Number, player);
+
             return network.send("kickPlayer", player);
-        } else if (typeof player === "string") {
+        } else if (type === "name") {
+            player = check(String, player);
+
             let number, p;
             for (number in sim.players) {
                 p = sim.players[number];
                 if (p.name.toLowerCase() === player.toLowerCase()) return network.send("kickPlayer", number);
             }
-            throw new Error(player + " : not found");
+            throw new Error(player + " : player not found");
         } else throw new Error("no player kicked");
     },
 
     /**
      * Add AI player
      * 
-     * @param {string} fleet - name of fleet
+     * @param {string|object} fleet - fleet
      * @param {string} name - name for ai
      * @param {string} side - side to add to | alpha, beta
+     * @param {string} type - name || location
      */
-    add_ai: async function (fleet, name, side) {
-        check_list([String, String, String], [fleet, name, side])
+    add_ai: async function (fleet, name, side, type) {
+        check_list([String, String, String], [name, side, type])
 
         let fleetAis, aiName, ref, row, tab, col, aiBuildBar;
+        if (type === "location") {
+            fleet = check(Object, fleet);
 
-        fleetAis = commander.fleet.ais || {};
-        for (key in fleetAis) {
-            aiName = fleetAis[key];
-            ref = fromAIKey(key), row = ref[0], tab = ref[1];
-            if (fleet === aiName) {
-                aiBuildBar = [];
-                for (col = i = 0; i < 10; col = ++i) aiBuildBar.push(commander.fleet[getFleetKey(row, col, tab)]);
-                network.send("addAi", name, side, aiBuildBar);
-                break;
+            fleet = compare_obj(fleet, _fleet);
+
+            aiBuildBar = [];
+            for (col = i = 0; i < 10; col = ++i) aiBuildBar.push(commander.fleet[getFleetKey(fleet.row, col, fleet.tab)]);
+            network.send("addAi", name, side, aiBuildBar);
+        } else if (type === "name") {
+            fleet = check(String, fleet);
+
+            fleetAis = commander.fleet.ais || {};
+            for (key in fleetAis) {
+                aiName = fleetAis[key];
+                ref = fromAIKey(key), row = ref[0], tab = ref[1];
+                if (fleet === aiName) {
+                    aiBuildBar = [];
+                    for (col = i = 0; i < 10; col = ++i) aiBuildBar.push(commander.fleet[getFleetKey(row, col, tab)]);
+                    network.send("addAi", name, side, aiBuildBar);
+                    break;
+                }
             }
         }
     },
@@ -230,19 +283,17 @@ var order = {
     /**
      * Copy Fleet
      * 
-     * @param {string} from - location of fleet | { row: number, tab: "string" }
-     * @param {string} to - location to copy to | { row: number, tab: "string" }
+     * @param {object} from - location of fleet
+     * @param {object} to - location to copy to
      */
     copy_fleet: async function (from, to) {
-        let _fleet, i, j, keyF, keyT;
-        _fleet = { tab: null, row: null};
+        let i, j, keyF, keyT;
+        
 
         from = compare_obj(from, _fleet);
         to = compare_obj(to, _fleet);
 
-        console.log(from.tab, from.row, to.tab, to.row);
-
-        check_list([String, Number, String, Number], [from.tab, from.row, to.tab, to.row])
+        check_list([String, Number, String, Number], [from.tab, from.row, to.tab, to.row]);
 
         for (i = j = 0; j < 10; i = ++j) {
             keyF = getFleetKey(from.row, i, from.tab);
@@ -270,36 +321,42 @@ var order = {
     //network.send("setRallyPoint", [0, 0]);
 }
 
-var find = {
+var get = {
     /**
      * Gets name of fleet
      *
-     * @param {number} row - row number
-     * @param {string} tab - tab name
+     * @param {object} location - location
      * @return {string} - fleet name
      */
-    fleet_name: async function (row, tab) {
-        check_list([Number, String], [row, tab])
+    fleet_name: function (location) {
+        check(Object, location);
 
-        return commander.fleet.ais(row, tab);
+        location = compare_obj(location, _fleet);
+
+        return commander.fleet.ais[`${location.row},${location.tab}`];
     },
 
     /**
      * Gets location of fleet by name
      *
      * @param {string} name - fleet name
-     * @return {string} - string with row and tab of fleet || false
+     * @return {object} - fleet location
      */
     fleet_location: function (name) {
         name = check(String, name);
+        let fleet, fleet_name, ref;
 
-        for (const fleet in commander.fleet.ais) {
-            let fleet_name = commander.fleet.ais[fleet];
+        for (fleet in commander.fleet.ais) {
+            fleet_name = commander.fleet.ais[fleet];
             if (fleet_name === name) {
-                return fleet;
+                ref = fleet.split(",");
+                return {
+                    row: parseInt(ref[0]),
+                    tab: ref[1]
+                }
             }
         }
-        return false;
+        throw new Error(name + " : fleet not found");
     },
 }
 
@@ -310,18 +367,16 @@ var current = {
      * @return {string} - current fleet name
      */
     fleet_name: function () {
-        fleet = commander.fleet.selection;
-        return commander.fleet.ais[`${fleet.row},${fleet.tab}`];
+        location = commander.fleet.selection;
+        return commander.fleet.ais[`${location.row},${location.tab}`];
     },
 
     /**
      * Gets location of the current fleet
      *
-     * @return {string} - current fleet location
+     * @return {object} - current fleet location
      */
     fleet_location: function () {
         return commander.fleet.selection;
     },
 }
-
-order.send_message("test");

@@ -1,0 +1,1 @@
+# istrolid-player_bot-api

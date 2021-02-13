@@ -97,6 +97,7 @@ var vaxyyyBot = vaxyyyBot || {
 
     tick: function () {
         if (vaxyyyBot.enabled) {
+            vaxyyyBot.step++;
             if (vaxyyyBot.step % 17 === 0) {
                 let queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
@@ -135,7 +136,6 @@ var vaxyyyBot = vaxyyyBot || {
                     })
                 );
             }
-            vaxyyyBot.step++;
         } else {
             vaxyyyBot.step = 0;
         }

@@ -90,13 +90,14 @@ var vaxyyyBot = vaxyyyBot || {
     bots: [],
     enabled: false,
     anti_afk: false, // dose what it says stops you from been afk or disconnecting
-    host: false,
     step: 0,
     messageQueue: [],
     last_msg: {},
+    self,
 
     tick: function () {
         if (vaxyyyBot.enabled) {
+            vaxyyyBot.self = commander;
             vaxyyyBot.step++;
             if (vaxyyyBot.step % 17 === 0) {
                 let queue = vaxyyyBot.messageQueue[0];
@@ -112,8 +113,6 @@ var vaxyyyBot = vaxyyyBot || {
                     network.send(`mouseMove`, [0, 0], false);
                 }
             } else if (vaxyyyBot.step % 8 === 0) {
-                vaxyyyBot.host = commander.host;
-
                 for (let i in vaxyyyBot.bots) {
                     let bot = vaxyyyBot.bots[i];
                     try {
@@ -194,7 +193,7 @@ var order = {
      * Starts game
      */
     startGame: function () {
-        if (!vaxyyyBot.host) throw new Error("not host");
+        if (!vaxyyyBot.self.host) throw new Error("not host");
 
         if (sim.countDown === 0) {
             if (sim.canStart()) {
@@ -209,7 +208,7 @@ var order = {
      * @param {string} mode - name of mode | 1v1, 2v2, 3v3, Survival
      */
     set_mode: function (mode) {
-        if (!vaxyyyBot.host) throw new Error("not host");
+        if (!vaxyyyBot.self.host) throw new Error("not host");
 
         mode = check(String, mode);
         network.send("configGame", {
@@ -244,7 +243,7 @@ var order = {
      * @param {string} type - number || name
      */
     kick_player: function (player, type) {
-        if (!vaxyyyBot.host) throw new Error("not host");
+        if (!vaxyyyBot.self.host) throw new Error("not host");
         type = check(String, type);
 
         if (type === "number") {
@@ -377,6 +376,66 @@ var get = {
             }
         }
         throw new Error(name + " : fleet not found");
+    },
+
+    /**
+     * Gets servers
+     *
+     * @return {array} - of all servers connected to rootNet
+     */
+    all_servers: function () {
+        let rst = [], server;
+        for (server in rootNet.servers) {
+            rst.push(rootNet.servers[server])
+        }
+        return rst;
+    },
+
+     /**
+     * Gets servers
+     *
+     * @return {array} - of all players connected to rootNet
+     */
+    all_players: function () {
+        let rst = [], s, server;
+        for (s in rootNet.servers) {
+            server = rootNet.servers[s]
+            if (server.players !== null) {
+                for (player of server.players) {
+                    rst.push(player);
+                }
+            }
+        }
+        return rst;
+    },
+
+    /**
+     * Gets players
+     *
+     * @return {array} - players and ai players in current server
+     */
+    players: function () {
+        let rst = [], player;
+        for (player of intp.players) {
+            rst.push(player);
+        }
+        return rst;
+    },
+
+    /**
+     * Gets players
+     *
+     * @return {object} - player
+     */
+    player: function (name) {
+        let number, player;
+        name = check(String, name);
+        
+        for (number in sim.players) {
+            player = sim.players[number];
+            if (player.name.toLowerCase() === name.toLowerCase()) return player;
+        }
+        throw new Error(name + " : player not found");
     },
 }
 

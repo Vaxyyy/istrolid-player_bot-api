@@ -192,7 +192,7 @@ var order = {
     /**
      * Starts game
      */
-    startGame: function () {
+    start_Game: function () {
         if (!vaxyyyBot.self.host) throw new Error("not host");
 
         if (sim.countDown === 0) {

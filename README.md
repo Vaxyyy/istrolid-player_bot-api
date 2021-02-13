@@ -1,1 +1,1 @@
-# istrolid-player_bot-api
+# bots

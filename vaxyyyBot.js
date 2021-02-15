@@ -26,10 +26,20 @@ var vaxyyyBot = vaxyyyBot || {
     self,
 
     tick: function () {
+        let p, list, bot, data;
         if (vaxyyyBot.enabled) {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
-            if (vaxyyyBot.step % 17 === 0) {
+            if (vaxyyyBot.step % 48 === 0) {
+                if (intp && intp.players) {
+                    list = get.players;
+                    for (p of intp.players) {
+                        list.all[p.name] = p;
+                        if (list[p.side]) list[p.side] = {};
+                        list[p.side][p.name] = p;
+                    }
+                }
+            } else if (vaxyyyBot.step % 17 === 0) {
                 let queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
@@ -44,7 +54,7 @@ var vaxyyyBot = vaxyyyBot || {
                 }
             } else if (vaxyyyBot.step % 8 === 0) {
                 for (let i in vaxyyyBot.bots) {
-                    let bot = vaxyyyBot.bots[i];
+                    bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
                             bot.run();
@@ -54,13 +64,13 @@ var vaxyyyBot = vaxyyyBot || {
                     }
                 }
 
-                let data = chat.lines[chat.lines.length - 1];
+                data = chat.lines[chat.lines.length - 1];
                 if (data === undefined) return;
                 if (vaxyyyBot.last_msg === data) return;
                 vaxyyyBot.last_msg = data;
 
                 for (let i in vaxyyyBot.bots) {
-                    let bot = vaxyyyBot.bots[i];
+                    bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.message === "function") {
                             bot.message(data);
@@ -281,6 +291,19 @@ var order = {
 
 /** @namespace */
 var get = {
+
+    /**
+     * players
+     * 
+     * @updated - 2880 milliseconds
+     */
+    players: {
+        all: {},
+        alpha: {},
+        beta: {},
+        spectators: {}
+    },
+
     /**
      * Gets name of fleet
      *
@@ -366,7 +389,7 @@ var get = {
         }
         throw new Error(name + " : player not found");
     },
-    
+
     /**
      * Gets players
      *

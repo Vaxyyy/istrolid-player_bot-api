@@ -3,12 +3,12 @@
  */
 
 /**
- * checks parameter 
+ * checks parameter
  * 
- * @param {constructor} type - type to compare 
+ * @param {constructor} type - type to compare
  * @param {any} value - value to check
  * @param {any} set - set value if undefined
- * @param {number} i - number of position in array 
+ * @param {number} i - number of position in array
  */
 function check(type, value, set, i) {
     if (value === undefined && set !== undefined) return set;
@@ -35,7 +35,7 @@ function check(type, value, set, i) {
 };
 
 /**
- * checks list of parameters 
+ * checks list of parameters
  * 
  * @param {array} parameter_types - types to compare 
  * @param {array} values - values to check
@@ -45,6 +45,12 @@ function check_list(parameter_types, values) {
     for (let i = 0; i < values.length; i++) check(parameter_types[i], values[i], undefined, i);
 };
 
+/**
+ * compare two object
+ * 
+ * @param {array} obj - object to check
+ * @param {array} need - object to compare
+ */
 function compare_obj(obj, need) {
     obj_length = Object.keys(obj).length;
     need_length = Object.keys(need).length;
@@ -56,25 +62,6 @@ function compare_obj(obj, need) {
     }
     return obj;
 };
-
-class EventEmitter extends EventTarget {};
-const emit = new EventEmitter();
-
-emit.addEventListener(
-    'istrolid-chat-message',
-    (event) => {
-        for (let i in vaxyyyBot.bots) {
-            let bot = vaxyyyBot.bots[i];
-            try {
-                if (bot && typeof bot.message === "function") {
-                    bot.message(event.detail);
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }
-);
 
 var hook = hook || {
     timer: setInterval(() => vaxyyyBot.tick(), 60)
@@ -129,11 +116,16 @@ var vaxyyyBot = vaxyyyBot || {
                 if (vaxyyyBot.last_msg === data) return;
                 vaxyyyBot.last_msg = data;
 
-                emit.dispatchEvent(
-                    new CustomEvent('istrolid-chat-message', {
-                        detail: data
-                    })
-                );
+                for (let i in vaxyyyBot.bots) {
+                    let bot = vaxyyyBot.bots[i];
+                    try {
+                        if (bot && typeof bot.message === "function") {
+                            bot.message(data);
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
             }
         } else {
             vaxyyyBot.step = 0;
@@ -277,7 +269,7 @@ var order = {
     add_ai: async function (fleet, name, side, type) {
         check_list([String, String, String], [name, side, type])
         let fleetAis, aiName, ref, row, tab, col, aiBuildBar;
-        
+
         if (type === "location") {
             fleet = check(Object, fleet);
 

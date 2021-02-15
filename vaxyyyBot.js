@@ -144,11 +144,15 @@ var vaxyyyBot = vaxyyyBot || {
         vaxyyyBot.bots.push(bot);
     },
 
-    clear_bots: function() {
+    clear_bots: function () {
         vaxyyyBot.bots = [];
     },
 }
 
+//-----------------------------------------------------------------------------
+// Funtions that let your bot do stuff
+
+/** @namespace */
 var order = {
     /**
      * Sends a chat message
@@ -272,8 +276,8 @@ var order = {
      */
     add_ai: async function (fleet, name, side, type) {
         check_list([String, String, String], [name, side, type])
-
         let fleetAis, aiName, ref, row, tab, col, aiBuildBar;
+        
         if (type === "location") {
             fleet = check(Object, fleet);
 
@@ -306,13 +310,10 @@ var order = {
      * @param {object} to - location to copy to
      */
     copy_fleet: async function (from, to) {
-        let i, j, keyF, keyT;
-
-
         from = compare_obj(from, _fleet);
         to = compare_obj(to, _fleet);
-
         check_list([String, Number, String, Number], [from.tab, from.row, to.tab, to.row]);
+        let i, j, keyF, keyT;
 
         for (i = j = 0; j < 10; i = ++j) {
             keyF = getFleetKey(from.row, i, from.tab);
@@ -340,6 +341,10 @@ var order = {
     //network.send("setRallyPoint", [0, 0]);
 }
 
+//-----------------------------------------------------------------------------
+// Funtions that let you check stuff
+
+/** @namespace */
 var get = {
     /**
      * Gets name of fleet
@@ -349,7 +354,6 @@ var get = {
      */
     fleet_name: function (location) {
         check(Object, location);
-
         location = compare_obj(location, _fleet);
 
         return commander.fleet.ais[`${location.row},${location.tab}`];
@@ -384,20 +388,22 @@ var get = {
      * @return {array} - of all servers connected to rootNet
      */
     all_servers: function () {
-        let rst = [], server;
+        let rst = [],
+            server;
         for (server in rootNet.servers) {
             rst.push(rootNet.servers[server])
         }
         return rst;
     },
 
-     /**
+    /**
      * Gets servers
      *
      * @return {array} - of all players connected to rootNet
      */
     all_players: function () {
-        let rst = [], s, server;
+        let rst = [],
+            s, server;
         for (s in rootNet.servers) {
             server = rootNet.servers[s]
             if (server.players !== null) {
@@ -410,12 +416,30 @@ var get = {
     },
 
     /**
+     * Gets player
+     *
+     * @param {string} name - player name
+     * @return {object} - player
+     */
+    player: function (name) {
+        name = check(String, name);
+        let number, player;
+
+        for (number in sim.players) {
+            player = sim.players[number];
+            if (player.name.toLowerCase() === name.toLowerCase()) return player;
+        }
+        throw new Error(name + " : player not found");
+    },
+    
+    /**
      * Gets players
      *
      * @return {array} - players and ai players in current server
      */
-    players: function () {
-        let rst = [], player;
+    current_players: function () {
+        let rst = [],
+            player;
         for (player of intp.players) {
             rst.push(player);
         }
@@ -423,29 +447,11 @@ var get = {
     },
 
     /**
-     * Gets players
-     *
-     * @return {object} - player
-     */
-    player: function (name) {
-        let number, player;
-        name = check(String, name);
-        
-        for (number in sim.players) {
-            player = sim.players[number];
-            if (player.name.toLowerCase() === name.toLowerCase()) return player;
-        }
-        throw new Error(name + " : player not found");
-    },
-}
-
-var current = {
-    /**
      * Gets name of the current fleet
      *
      * @return {string} - current fleet name
      */
-    fleet_name: function () {
+    current_fleet_name: function () {
         location = commander.fleet.selection;
         return commander.fleet.ais[`${location.row},${location.tab}`];
     },
@@ -455,7 +461,7 @@ var current = {
      *
      * @return {object} - current fleet location
      */
-    fleet_location: function () {
+    current_fleet_location: function () {
         return commander.fleet.selection;
     },
 }

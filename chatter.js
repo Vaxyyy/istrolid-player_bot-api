@@ -9,13 +9,17 @@ vaxyyyBot.add_bot({
             channel,
             color
         } = data,
-            name_lower = name.toLowerCase(),
+        name_lower = name.toLowerCase(),
             args = text.split(" "),
             command = args[0].toLowerCase(),
             playing = commander.side === "spectators" ? false : true,
             server = battleMode.server === undefined ? false : true,
-            local = intp.local;
-            args.splice(0, 1);
+            local = intp.local.
+            alliances = {
+                name: "",
+                joined: false
+            };
+        args.splice(0, 1);
 
         if (server && !local) {
             if (name === "Server") {
@@ -34,6 +38,36 @@ vaxyyyBot.add_bot({
                         order.send_message("ggwp");
                     }
                     */
+                    if (battleMode.serverName === "Istroverse (KevX)") {
+                        if (alliances.joined) {
+                            if (text.includes("has created")) {
+                                sendMessage("A rivalry alliance");
+                            } else if (text.includes(`${commander.name} has been invited to`)) {
+                                if (args[4] === alliances.name) {
+                                    sendMessage(`Im already in your alliance`);
+                                } else {
+                                    sendMessage(`Sorry im in the "${alliances.name}" alliance`);
+                                }
+                            } else if (text.includes(`${commander.name} has been kicked from ${alliances.name}`)) {
+                                alliances.joined = false;
+                                alliances.name = "";
+                                sendMessage("Cya, thanks for having me");
+                            } else if (text.includes(`has disbanded ${alliances.name}`)) {
+                                alliances.joined = false;
+                                alliances.name = "";
+                                sendMessage("Bye alliances");
+                            }
+                        } else {
+                            if (text.includes("has created")) {
+                                sendMessage("new clan, nice");
+                            } else if (text.includes(`${commander.name} has been invited to`)) {
+                                alliances.name = args[4];
+                                alliances.joined = true;
+                                sendMessage("Ok, i will join :)");
+                                sendMessage("!join " + alliances.name);
+                            }
+                        }
+                    }
                 }
                 if (text.includes(`kicked ${commander.name}`)) {
                     order.send_message("cya");
@@ -42,8 +76,7 @@ vaxyyyBot.add_bot({
             }
         }
     },
-    run: function () {
-    },
+    run: function () {},
 });
 
 vaxyyyBot.enabled = true;

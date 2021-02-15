@@ -2,67 +2,6 @@
  * This is an javascript player bot api for istrolid
  */
 
-/**
- * checks parameter
- * 
- * @param {constructor} type - type to compare
- * @param {any} value - value to check
- * @param {any} set - set value if undefined
- * @param {number} i - number of position in array
- */
-function check(type, value, set, i) {
-    if (value === undefined && set !== undefined) return set;
-    switch (type) {
-        case Boolean:
-            if (typeof value === "boolean") return value;
-            break;
-        case String:
-            if (typeof value === "string") return value;
-            break;
-        case Number:
-            if (typeof value === "number") return value;
-            break;
-        case Array:
-            if (Array.isArray(value)) return value;
-            break;
-        case Object:
-            if (value instanceof Object) return value;
-            break;
-        default:
-            throw new Error("param : Expecting " + type.name + " " + i ? i++ : "");
-    }
-    throw new Error("param : Expecting " + type.name + " " + i ? i++ : "");
-};
-
-/**
- * checks list of parameters
- * 
- * @param {array} parameter_types - types to compare 
- * @param {array} values - values to check
- */
-function check_list(parameter_types, values) {
-    if (parameter_types.length !== values.length) throw new Error(`parameters has ${parameter_types.length} parameters, but the values has ${values.length}`);
-    for (let i = 0; i < values.length; i++) check(parameter_types[i], values[i], undefined, i);
-};
-
-/**
- * compare two object
- * 
- * @param {array} obj - object to check
- * @param {array} need - object to compare
- */
-function compare_obj(obj, need) {
-    obj_length = Object.keys(obj).length;
-    need_length = Object.keys(need).length;
-
-    if (obj_length !== need_length) throw new Error(`need has ${need_length} values, but the obj has ${obj_length}`);
-
-    for (let i in need) {
-        if (!(i in obj)) throw new Error("Compare : Expecting " + i);
-    }
-    return obj;
-};
-
 var hook = hook || {
     timer: setInterval(() => vaxyyyBot.tick(), 60)
 };
@@ -72,6 +11,10 @@ let _fleet = {
     row: null
 };
 
+//-----------------------------------------------------------------------------
+// Controls stores and runs the bots
+
+/** @namespace */
 var vaxyyyBot = vaxyyyBot || {
 
     bots: [],
@@ -457,3 +400,67 @@ var get = {
         return commander.fleet.selection;
     },
 }
+
+//-----------------------------------------------------------------------------
+// Funtions that will check stuff
+
+/**
+ * checks parameter
+ * 
+ * @param {constructor} type - type to compare
+ * @param {any} value - value to check
+ * @param {any} set - set value if undefined
+ * @param {number} i - number of position in array
+ */
+function check(type, value, set, i) {
+    if (value === undefined && set !== undefined) return set;
+    switch (type) {
+        case Boolean:
+            if (typeof value === "boolean") return value;
+            break;
+        case String:
+            if (typeof value === "string") return value;
+            break;
+        case Number:
+            if (typeof value === "number") return value;
+            break;
+        case Array:
+            if (Array.isArray(value)) return value;
+            break;
+        case Object:
+            if (value instanceof Object) return value;
+            break;
+        default:
+            throw new Error("param : Expecting " + type.name + " " + i ? i++ : "");
+    }
+    throw new Error("param : Expecting " + type.name + " " + i ? i++ : "");
+};
+
+/**
+ * checks list of parameters
+ * 
+ * @param {array} parameter_types - types to compare 
+ * @param {array} values - values to check
+ */
+function check_list(parameter_types, values) {
+    if (parameter_types.length !== values.length) throw new Error(`parameters has ${parameter_types.length} parameters, but the values has ${values.length}`);
+    for (let i = 0; i < values.length; i++) check(parameter_types[i], values[i], undefined, i);
+};
+
+/**
+ * compare two object
+ * 
+ * @param {array} obj - object to check
+ * @param {array} need - object to compare
+ */
+function compare_obj(obj, need) {
+    obj_length = Object.keys(obj).length;
+    need_length = Object.keys(need).length;
+
+    if (obj_length !== need_length) throw new Error(`need has ${need_length} values, but the obj has ${obj_length}`);
+
+    for (let i in need) {
+        if (!(i in obj)) throw new Error("Compare : Expecting " + i);
+    }
+    return obj;
+};

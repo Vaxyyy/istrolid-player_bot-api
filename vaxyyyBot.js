@@ -277,7 +277,7 @@ var order = {
 }
 
 //-----------------------------------------------------------------------------
-// Funtions that let you check stuff
+// Funtions that let you check stuff for bot
 
 /** @namespace */
 var get = {
@@ -402,7 +402,7 @@ var get = {
 }
 
 //-----------------------------------------------------------------------------
-// Funtions that will check stuff
+// Funtions that will check stuff for code
 
 /**
  * checks parameter

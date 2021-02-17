@@ -12,8 +12,7 @@ let _fleet = {
 };
 
 //-----------------------------------------------------------------------------
-// Controls stores and runs the bots
-
+// Controls, stores and runs the bots
 /** @namespace */
 var vaxyyyBot = vaxyyyBot || {
 
@@ -23,24 +22,17 @@ var vaxyyyBot = vaxyyyBot || {
     step: 0,
     messageQueue: [],
     last_msg: {},
+    current_bot,
     self,
 
     tick: function () {
-        let p, list, bot, data;
+        let queue, i, bot, data;
         if (vaxyyyBot.enabled) {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
             if (vaxyyyBot.step % 48 === 0) {
-                if (intp && intp.players) {
-                    list = get.players;
-                    for (p of intp.players) {
-                        list.all[p.name] = p;
-                        if (list[p.side]) list[p.side] = {};
-                        list[p.side][p.name] = p;
-                    }
-                }
             } else if (vaxyyyBot.step % 17 === 0) {
-                let queue = vaxyyyBot.messageQueue[0];
+                queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
                         text: queue.text,
@@ -53,10 +45,11 @@ var vaxyyyBot = vaxyyyBot || {
                     network.send(`mouseMove`, [0, 0], false);
                 }
             } else if (vaxyyyBot.step % 8 === 0) {
-                for (let i in vaxyyyBot.bots) {
+                for (i in vaxyyyBot.bots) {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
+                            current_bot = bot;
                             bot.run();
                         }
                     } catch (e) {
@@ -69,10 +62,12 @@ var vaxyyyBot = vaxyyyBot || {
                 if (vaxyyyBot.last_msg === data) return;
                 vaxyyyBot.last_msg = data;
 
-                for (let i in vaxyyyBot.bots) {
+
+                for (i in vaxyyyBot.bots) {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.message === "function") {
+                            current_bot = bot;
                             bot.message(data);
                         }
                     } catch (e) {
@@ -86,17 +81,19 @@ var vaxyyyBot = vaxyyyBot || {
     },
 
     add_bot: function (bot) {
+        data = Object.assign({ memory: memory.data[bot.name] = {}}, bot)
+        if (bot.message) bot.message = bot.message.bind(data);
+        if (bot.run) bot.run = bot.run.bind(data);
         vaxyyyBot.bots.push(bot);
     },
 
     clear_bots: function () {
         vaxyyyBot.bots = [];
     },
-}
+};
 
 //-----------------------------------------------------------------------------
 // Funtions that let your bot do stuff
-
 /** @namespace */
 var order = {
     /**
@@ -106,7 +103,7 @@ var order = {
      * @param {number} max - max lenght of character | max 300
      * @param {string} server - channel name to send message | lobbys server name
      */
-    send_message: async function (msg, max, server) {
+    send_message: function (msg, max, server) {
         msg = check(String, msg);
         max = check(Number, max, 300);
         server = check(String, server, battleMode.serverName);
@@ -118,9 +115,9 @@ var order = {
     },
 
     /**
-     * @warning this will save your account
      * Sets current fleet
      *
+     * @warning this will save your account
      * @param {object} location - location
      */
     set_fleet: async function (location) {
@@ -284,26 +281,12 @@ var order = {
     //network.send("selfDestructOrder");
 
     //network.send("setRallyPoint", [0, 0]);
-}
+};
 
 //-----------------------------------------------------------------------------
 // Funtions that let you check stuff for bot
-
 /** @namespace */
 var get = {
-
-    /**
-     * players
-     * 
-     * @updated - 2880 milliseconds
-     */
-    players: {
-        all: {},
-        alpha: {},
-        beta: {},
-        spectators: {}
-    },
-
     /**
      * Gets name of fleet
      *
@@ -421,6 +404,77 @@ var get = {
      */
     current_fleet_location: function () {
         return commander.fleet.selection;
+    },
+};
+
+//-----------------------------------------------------------------------------
+// Funtions and storage for bots memory
+/** @namespace */
+var memory = {
+
+    data: {},
+
+    /**
+     * Force saves all memory
+     *
+     * @warning this will save your account
+     * @warning max 10 Megabytes of data
+     */
+    root_save: function (){
+        if (new Blob([memory.data]).size > 9999999) throw new Error("data to big");
+        else {
+            commander.fleet["bot_memory"] = JSON.stringify(memory.data);
+            account.save();
+        }
+    },
+
+    /**
+     * Force loads all memory
+     */
+    root_load: function (){
+        if (commander.fleet["bot_memory"] === undefined) throw new Error("no memory to load");
+        memory.data = JSON.parse(commander.fleet["bot_memory"]);
+    },
+
+    // this.memory[`games.${sim.serverType}.loss`]++;
+
+    /**
+     * Force loads all memory
+     * 
+     * @param {string} location - location eg "games.1v1.loss"
+     * @param {string} type - add | subtract | set
+     * @param {any} value - location
+     */
+    save: function (location, type, value){
+        check(String, location);
+        check(String, type);
+
+        if (type === "add") {
+            memory.data[vaxyyyBot.current_bot][location] += value;
+        } else if (type === "subtract") {
+            memory.data[vaxyyyBot.current_bot][location] -= value;
+        } else if (type === "set") {
+            memory.data[vaxyyyBot.current_bot][location] = value;
+        }
+        else throw new Error("no type selected");
+    },
+};
+
+//-----------------------------------------------------------------------------
+// IstroStats api Funtions
+
+var istroStats_api = {
+    /**
+     * pull data from istrostats.r26.me
+     * see https://github.com/Rio6/IstroStats for use
+     *
+     * @param {string} data - api request
+     * @return {object} - api response
+     */
+    GET: async function(data) {
+        data = check(String, data);
+        const res = await fetch(`http://istrostats.r26.me/api/${data}/`).then(res => res.json());
+        return await res;
     },
 }
 

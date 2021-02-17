@@ -445,18 +445,18 @@ var memory = {
      * 
      * @param {string} path - path eg "games.1v1.loss"
      * @param {string} type - add | subtract | set
-     * @param {any} value - path
+     * @param {any} data - data to write
      */
-    write: function (path, type, value){
+    write: function (path, type, data){
         check(String, path);
         check(String, type);
 
         if (type === "add") {
-            memory.data[vaxyyyBot.current_bot][path] += value;
+            memory.data[vaxyyyBot.current_bot][path] += data;
         } else if (type === "subtract") {
-            memory.data[vaxyyyBot.current_bot][path] -= value;
+            memory.data[vaxyyyBot.current_bot][path] -= data;
         } else if (type === "set") {
-            memory.data[vaxyyyBot.current_bot][path] = value;
+            memory.data[vaxyyyBot.current_bot][path] = data;
         } else throw new Error("no valid type selected");
     },
 

@@ -118,13 +118,13 @@ var order = {
      * Sets current fleet
      *
      * @warning this will save your account
-     * @param {object} location - location
+     * @param {object} path - path of fleet
      */
-    set_fleet: async function (location) {
-        location = check(Object, location);
-        location = compare_obj(location, _fleet);
+    set_fleet: async function (path) {
+        path = check(Object, path);
+        path = compare_obj(path, _fleet);
 
-        commander.fleet.selection = location;
+        commander.fleet.selection = path;
         account.save();
     },
 
@@ -214,13 +214,13 @@ var order = {
      * @param {string|object} fleet - fleet
      * @param {string} name - name for ai
      * @param {string} side - side to add to | alpha, beta
-     * @param {string} type - name || location
+     * @param {string} type - name | path
      */
     add_ai: async function (fleet, name, side, type) {
         check_list([String, String, String], [name, side, type])
         let fleetAis, aiName, ref, row, tab, col, aiBuildBar;
 
-        if (type === "location") {
+        if (type === "path") {
             fleet = check(Object, fleet);
 
             fleet = compare_obj(fleet, _fleet);
@@ -248,8 +248,8 @@ var order = {
     /**
      * Copy Fleet
      * 
-     * @param {object} from - location of fleet
-     * @param {object} to - location to copy to
+     * @param {object} from - path of fleet
+     * @param {object} to - path to copy to
      */
     copy_fleet: async function (from, to) {
         from = compare_obj(from, _fleet);
@@ -290,23 +290,23 @@ var get = {
     /**
      * Gets name of fleet
      *
-     * @param {object} location - location
+     * @param {object} path - fleet path
      * @return {string} - fleet name
      */
-    fleet_name: function (location) {
-        check(Object, location);
-        location = compare_obj(location, _fleet);
+    fleet_name: function (path) {
+        check(Object, path);
+        path = compare_obj(path, _fleet);
 
-        return commander.fleet.ais[`${location.row},${location.tab}`];
+        return commander.fleet.ais[`${path.row},${path.tab}`];
     },
 
     /**
-     * Gets location of fleet by name
+     * Gets path of fleet by name
      *
      * @param {string} name - fleet name
-     * @return {object} - fleet location
+     * @return {object} - fleet path
      */
-    fleet_location: function (name) {
+    fleet_path: function (name) {
         name = check(String, name);
         let fleet, fleet_name, ref;
 
@@ -393,16 +393,16 @@ var get = {
      * @return {string} - current fleet name
      */
     current_fleet_name: function () {
-        location = commander.fleet.selection;
-        return commander.fleet.ais[`${location.row},${location.tab}`];
+        path = commander.fleet.selection;
+        return commander.fleet.ais[`${path.row},${path.tab}`];
     },
 
     /**
-     * Gets location of the current fleet
+     * Gets path of the current fleet
      *
-     * @return {object} - current fleet location
+     * @return {object} - current fleet path
      */
-    current_fleet_location: function () {
+    current_fleet_path: function () {
         return commander.fleet.selection;
     },
 };
@@ -443,33 +443,33 @@ var memory = {
      * 
      * @warning this will not save data to account 
      * 
-     * @param {string} location - location eg "games.1v1.loss"
+     * @param {string} path - path eg "games.1v1.loss"
      * @param {string} type - add | subtract | set
-     * @param {any} value - location
+     * @param {any} value - path
      */
-    write: function (location, type, value){
-        check(String, location);
+    write: function (path, type, value){
+        check(String, path);
         check(String, type);
 
         if (type === "add") {
-            memory.data[vaxyyyBot.current_bot][location] += value;
+            memory.data[vaxyyyBot.current_bot][path] += value;
         } else if (type === "subtract") {
-            memory.data[vaxyyyBot.current_bot][location] -= value;
+            memory.data[vaxyyyBot.current_bot][path] -= value;
         } else if (type === "set") {
-            memory.data[vaxyyyBot.current_bot][location] = value;
+            memory.data[vaxyyyBot.current_bot][path] = value;
         } else throw new Error("no valid type selected");
     },
 
     /**
      * read data from memory.data
      * 
-     * @param {string} location - location eg "games.1v1.loss"
+     * @param {string} path - path eg "games.1v1.loss"
      * @return {any} - value
      */
-    read: function (location){
-        check(String, location);
-        if (!memory.data[vaxyyyBot.current_bot][location]) throw new Error("can not read data");
-        else return memory.data[vaxyyyBot.current_bot][location];
+    read: function (path){
+        check(String, path);
+        if (!memory.data[vaxyyyBot.current_bot][path]) throw new Error("can not read data");
+        else return memory.data[vaxyyyBot.current_bot][path];
     }
 };
 

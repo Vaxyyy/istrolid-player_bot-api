@@ -22,8 +22,8 @@ var vaxyyyBot = vaxyyyBot || {
     step: 0,
     messageQueue: [],
     last_msg: {},
-    current_bot,
-    self,
+    current_bot: {},
+    self: {},
 
     tick: function () {
         let queue, i, bot, data;
@@ -439,13 +439,15 @@ var memory = {
     // this.memory[`games.${sim.serverType}.loss`]++;
 
     /**
-     * Force loads all memory
+     * write data to memory.data
+     * 
+     * @warning this will not save data to account 
      * 
      * @param {string} location - location eg "games.1v1.loss"
      * @param {string} type - add | subtract | set
      * @param {any} value - location
      */
-    save: function (location, type, value){
+    write: function (location, type, value){
         check(String, location);
         check(String, type);
 
@@ -455,9 +457,20 @@ var memory = {
             memory.data[vaxyyyBot.current_bot][location] -= value;
         } else if (type === "set") {
             memory.data[vaxyyyBot.current_bot][location] = value;
-        }
-        else throw new Error("no type selected");
+        } else throw new Error("no valid type selected");
     },
+
+    /**
+     * read data from memory.data
+     * 
+     * @param {string} location - location eg "games.1v1.loss"
+     * @return {any} - value
+     */
+    read: function (location){
+        check(String, location);
+        if (!memory.data[vaxyyyBot.current_bot][location]) throw new Error("can not read data");
+        else return memory.data[vaxyyyBot.current_bot][location];
+    }
 };
 
 //-----------------------------------------------------------------------------
@@ -466,14 +479,14 @@ var memory = {
 var istroStats_api = {
     /**
      * pull data from istrostats.r26.me
-     * see https://github.com/Rio6/IstroStats for use
+     * see https://github.com/Rio6/IstroStats/blob/master/README.md for use
      *
      * @param {string} data - api request
      * @return {object} - api response
      */
     GET: async function(data) {
         data = check(String, data);
-        const res = await fetch(`http://istrostats.r26.me/api/${data}/`).then(res => res.json());
+        const res = await fetch(`http://istrostats.r26.me/api/${data}`).then(res => res.json());
         return await res;
     },
 }

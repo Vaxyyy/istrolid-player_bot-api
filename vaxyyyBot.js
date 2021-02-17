@@ -30,8 +30,7 @@ var vaxyyyBot = vaxyyyBot || {
         if (vaxyyyBot.enabled) {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
-            if (vaxyyyBot.step % 48 === 0) {
-            } else if (vaxyyyBot.step % 17 === 0) {
+            if (vaxyyyBot.step % 48 === 0) {} else if (vaxyyyBot.step % 17 === 0) {
                 queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
@@ -49,7 +48,7 @@ var vaxyyyBot = vaxyyyBot || {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
-                            current_bot = bot;
+                            vaxyyyBot.current_bot = bot;
                             bot.run();
                         }
                     } catch (e) {
@@ -67,7 +66,7 @@ var vaxyyyBot = vaxyyyBot || {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.message === "function") {
-                            current_bot = bot;
+                            vaxyyyBot.current_bot = bot;
                             bot.message(data);
                         }
                     } catch (e) {
@@ -81,7 +80,9 @@ var vaxyyyBot = vaxyyyBot || {
     },
 
     add_bot: function (bot) {
-        data = Object.assign({ memory: memory.data[bot.name] = {}}, bot)
+        data = Object.assign({
+            memory: memory.data[bot.name] = {}
+        }, bot)
         if (bot.message) bot.message = bot.message.bind(data);
         if (bot.run) bot.run = bot.run.bind(data);
         vaxyyyBot.bots.push(bot);
@@ -117,7 +118,7 @@ var order = {
     /**
      * Sets current fleet
      *
-     * @warning this will save your account
+     * @warning this will save your istolid account
      * @param {object} path - path of fleet
      */
     set_fleet: async function (path) {
@@ -417,10 +418,10 @@ var memory = {
     /**
      * Force saves all memory
      *
-     * @warning this will save your account
+     * @warning this will save your istrolid account
      * @warning max 10 Megabytes of data
      */
-    root_save: function (){
+    root_save: function () {
         if (new Blob([memory.data]).size > 9999999) throw new Error("data to big");
         else {
             commander.fleet["bot_memory"] = JSON.stringify(memory.data);
@@ -431,45 +432,49 @@ var memory = {
     /**
      * Force loads all memory
      */
-    root_load: function (){
+    root_load: function () {
         if (commander.fleet["bot_memory"] === undefined) throw new Error("no memory to load");
         memory.data = JSON.parse(commander.fleet["bot_memory"]);
     },
 
-    // this.memory[`games.${sim.serverType}.loss`]++;
-
     /**
      * write data to memory.data
      * 
-     * @warning this will not save data to account 
+     * @warning this will not save data to your istolid account 
      * 
-     * @param {string} path - path eg "games.1v1.loss"
+     * @param {array} path - path eg ["games", "1v1", "loss"]
      * @param {string} type - add | subtract | set
      * @param {any} data - data to write
      */
-    write: function (path, type, data){
-        check(String, path);
+    write: function (path, type, data) {
+        check(Array, path);
         check(String, type);
 
+        let _path = memory.data[vaxyyyBot.current_bot.name];
+
+        array_to_objects(_path, path, data);
+
         if (type === "add") {
-            memory.data[vaxyyyBot.current_bot][path] += data;
+            _path += data;
         } else if (type === "subtract") {
-            memory.data[vaxyyyBot.current_bot][path] -= data;
+            _path -= data;
         } else if (type === "set") {
-            memory.data[vaxyyyBot.current_bot][path] = data;
+            _path = data;
         } else throw new Error("no valid type selected");
     },
 
     /**
      * read data from memory.data
      * 
-     * @param {string} path - path eg "games.1v1.loss"
+     * @param {array} path - path eg ["games", "1v1", "loss"]
      * @return {any} - value
      */
-    read: function (path){
-        check(String, path);
-        if (!memory.data[vaxyyyBot.current_bot][path]) throw new Error("can not read data");
-        else return memory.data[vaxyyyBot.current_bot][path];
+    read: function (path) {
+        check(Array, path);
+
+        let _path = memory.data[vaxyyyBot.current_bot.name][path];
+        if (!_path) throw new Error("can not read data");
+        else return _path;
     }
 };
 
@@ -484,12 +489,12 @@ var istroStats_api = {
      * @param {string} data - api request
      * @return {object} - api response
      */
-    GET: async function(data) {
+    GET: async function (data) {
         data = check(String, data);
         const res = await fetch(`http://istrostats.r26.me/api/${data}`).then(res => res.json());
         return await res;
     },
-}
+};
 
 //-----------------------------------------------------------------------------
 // Funtions that will check stuff for code
@@ -554,3 +559,18 @@ function compare_obj(obj, need) {
     }
     return obj;
 };
+
+function array_to_objects(object, array, data) {
+
+    let i, key, key_Value;
+    for (i = 0, len = array.length; i < len; i++) {
+        key = array[i];
+        // if it is the last array part, add the value else we have to got on building objects
+        key_Value = (i === len - 1) ? data : {};
+        // test if there is already a given key and if not create one or if it is the last part of the key add the value
+        if (typeof object[key] === "undefined") {
+            object[key] = key_Value;
+        }
+        object = object[key];
+    }
+}

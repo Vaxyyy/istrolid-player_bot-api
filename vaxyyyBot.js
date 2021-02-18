@@ -449,17 +449,23 @@ var memory = {
     write: function (path, type, data) {
         check(Array, path);
         check(String, type);
-
-        let _path = memory.data[vaxyyyBot.current_bot.name];
-
-        array_to_objects(_path, path, data);
-
+        // create obj if doesn't exist & set obj to path
+        let i, ele, obj = memory.data[vaxyyyBot.current_bot.name],
+            lastPath = path[path.length - 1];
+        for (i = 0; i < path.length - 1; i++) {
+            ele = path[i];
+            // if obj[ele] is not object (undefined or other primitives), make it one.
+            // this overrides existing non object variables
+            if (typeof obj[ele] !== "object") obj[ele] = {};
+            obj = obj[ele];
+        }
+        if (obj[lastPath] === undefined) obj[lastPath] = data;
         if (type === "add") {
-            _path += data;
+            obj[lastPath] += data;
         } else if (type === "subtract") {
-            _path -= data;
+            obj[lastPath] -= data;
         } else if (type === "set") {
-            _path = data;
+            obj[lastPath] = data;
         } else throw new Error("no valid type selected");
     },
 
@@ -471,10 +477,14 @@ var memory = {
      */
     read: function (path) {
         check(Array, path);
-
-        let _path = memory.data[vaxyyyBot.current_bot.name][path];
-        if (!_path) throw new Error("can not read data");
-        else return _path;
+        let i, ele, obj = memory.data[vaxyyyBot.current_bot.name],
+            lastPath = path[path.length - 1];
+        for (i = 0; i < path.length - 1; i++) {
+            ele = path[i];
+            obj = obj[ele];
+        }
+        if (!obj[lastPath]) throw new Error("no data to read");
+        else return obj[lastPath];
     }
 };
 
@@ -559,18 +569,3 @@ function compare_obj(obj, need) {
     }
     return obj;
 };
-
-function array_to_objects(object, array, data) {
-
-    let i, key, key_Value;
-    for (i = 0, len = array.length; i < len; i++) {
-        key = array[i];
-        // if it is the last array part, add the value else we have to got on building objects
-        key_Value = (i === len - 1) ? data : {};
-        // test if there is already a given key and if not create one or if it is the last part of the key add the value
-        if (typeof object[key] === "undefined") {
-            object[key] = key_Value;
-        }
-        object = object[key];
-    }
-}

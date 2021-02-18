@@ -80,8 +80,16 @@ var vaxyyyBot = vaxyyyBot || {
     },
 
     add_bot: function (bot) {
+        try {
+            if (bot && bot.start !== undefined && typeof bot.start === "function") {
+                vaxyyyBot.current_bot = bot;
+                bot.start();
+            }
+        } catch (e) {
+            console.error(e);
+        }
         data = Object.assign({
-            memory: memory.data[bot.name] = {}
+            memory: memory.data[bot.name] = {}, self: vaxyyyBot.self
         }, bot)
         if (bot.message) bot.message = bot.message.bind(data);
         if (bot.run) bot.run = bot.run.bind(data);
@@ -126,7 +134,7 @@ var order = {
         path = compare_obj(path, _fleet);
 
         commander.fleet.selection = path;
-        account.save();
+        account.rootSave();
     },
 
     /**
@@ -424,8 +432,8 @@ var memory = {
     root_save: function () {
         if (new Blob([memory.data]).size > 9999999) throw new Error("data to big");
         else {
-            commander.fleet["bot_memory"] = JSON.stringify(memory.data);
-            account.save();
+            commander.fleet.bot_memory = memory.data;
+            account.rootSave();
         }
     },
 
@@ -433,8 +441,8 @@ var memory = {
      * Force loads all memory
      */
     root_load: function () {
-        if (commander.fleet["bot_memory"] === undefined) throw new Error("no memory to load");
-        memory.data = JSON.parse(commander.fleet["bot_memory"]);
+        if (commander.fleet.bot_memory === undefined) throw new Error("no memory to load");
+        memory.data = commander.fleet.bot_memory;
     },
 
     /**

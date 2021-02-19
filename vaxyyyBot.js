@@ -2,7 +2,7 @@
  * This is an javascript player bot api for istrolid
  */
 
-var hook = hook || {
+let hook = hook || {
     timer: setInterval(() => vaxyyyBot.tick(), 60)
 };
 
@@ -14,7 +14,7 @@ let _fleet = {
 //-----------------------------------------------------------------------------
 // Controls, stores and runs the bots
 /** @namespace */
-var vaxyyyBot = vaxyyyBot || {
+let vaxyyyBot = vaxyyyBot || {
 
     bots: [],
     enabled: false,
@@ -105,7 +105,7 @@ var vaxyyyBot = vaxyyyBot || {
 //-----------------------------------------------------------------------------
 // Funtions that let your bot do stuff
 /** @namespace */
-var order = {
+let order = {
     /**
      * Sends a chat message
      *
@@ -360,11 +360,18 @@ var order = {
         return control.savePlayer();
     },
 
+    /**
+     * deletes fleet 
+     * 
+     * @param {object} from - path of fleet
+     * @param {object} to - path to copy to
+     * @param {boolean} copy - copy fleet true | false
+     */
     remove_fleet: function (path) {
         from = compare_obj(path, _fleet);
         check_list([String, Number], [path.tab, path.row]);
-        var c, i, j, k, lastRow, r, ref, ref1, ref2, ref3, t, v, row = path.row, tab = path.tab;
-        
+        let c, i, j, k, lastRow, r, ref, ref1, ref2, ref3, t, v, row = path.row, tab = path.tab;
+
         if (tab == null) {
             tab = null;
         }
@@ -417,7 +424,7 @@ var order = {
 //-----------------------------------------------------------------------------
 // Funtions that let you check stuff for bot
 /** @namespace */
-var get = {
+let get = {
     /**
      * Gets name of fleet
      *
@@ -537,8 +544,14 @@ var get = {
         return commander.fleet.selection;
     },
 
+    /**
+     * checks if empty spec
+     *
+     * @param {any} spec - spec
+     * @return {boolean}
+     */
     is_empty_spec: function (spec) {
-        var error;
+        let error;
         if (!spec) {
             return true;
         }
@@ -556,8 +569,16 @@ var get = {
         return false;
     },
 
+    /**
+     * checks if empty fleet
+     *
+     * @return {boolean}
+     */
     is_empty_fleet: function (row, tab) {
-        var i, j;
+        from = compare_obj(path, _fleet);
+        check_list([String, Number], [path.tab, path.row]);
+        let i, j, row = path.row, tab = path.tab;
+
         if (commander.fleet.ais[getAIKey(row, tab)]) {
             return false;
         }
@@ -573,7 +594,7 @@ var get = {
 //-----------------------------------------------------------------------------
 // Funtions and storage for bots memory
 /** @namespace */
-var memory = {
+let memory = {
 
     data: {},
 
@@ -617,7 +638,7 @@ var memory = {
         for (i = 0; i < path.length - 1; i++) {
             ele = path[i];
             // if obj[ele] is not object (undefined or other primitives), make it one.
-            // this overrides existing non object variables
+            // this overrides existing non object letiables
             if (typeof obj[ele] !== "object") obj[ele] = {};
             obj = obj[ele];
         }
@@ -653,7 +674,7 @@ var memory = {
 //-----------------------------------------------------------------------------
 // IstroStats api Funtions
 
-var istroStats_api = {
+let istroStats_api = {
     /**
      * pull data from istrostats.r26.me
      * see https://github.com/Rio6/IstroStats/blob/master/README.md for use

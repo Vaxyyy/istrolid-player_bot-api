@@ -655,6 +655,9 @@ let memory = {
     /**
      * read data from memory.data
      * 
+     * // this might not bee the best thing to use becuse well
+     * // you can just use this.memory.games.1v1.loss
+     * 
      * @param {array} path - path eg ["games", "1v1", "loss"]
      * @return {any} - value
      */

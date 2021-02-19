@@ -89,7 +89,8 @@ var vaxyyyBot = vaxyyyBot || {
             console.error(e);
         }
         data = Object.assign({
-            memory: memory.data[bot.name] = {}, self: vaxyyyBot.self
+            memory: memory.data[bot.name] = {},
+            self: vaxyyyBot.self
         }, bot)
         if (bot.message) bot.message = bot.message.bind(data);
         if (bot.run) bot.run = bot.run.bind(data);
@@ -274,6 +275,127 @@ var order = {
         return commander.fleet.ais[getAIKey(to.row, to.tab)] = commander.fleet.ais[getAIKey(from.row, from.tab)];
     },
 
+    /**
+     * Copy Fleet
+     * 
+     * @param {object} from - path of fleet
+     * @param {object} to - path to copy to
+     * @param {boolean} copy - copy fleet true | false
+     */
+    move_fleet: function (from, to, copy) {
+        from = compare_obj(from, _fleet);
+        to = compare_obj(to, _fleet);
+        check_list([String, Number, String, Number], [from.tab, from.row, to.tab, to.row]);
+        if (!copy && from.row === to.row && from.tab === to.tab) return;
+        check(Boolean, copy);
+        let col, dir, empty, i, j, k, l, m, moving, n, ref, ref1, ref2, ref3, ref4, row, tab, v;
+
+        if (get.is_empty_fleet(to.row, to.tab)) {
+            this.copy_fleet(from, to);
+            if (!copy) {
+                delete commander.fleet.ais[getAIKey(from.row, from.tab)];
+                for (i = j = 0; j < 10; i = ++j) {
+                    commander.fleet[getFleetKey(from.row, i, from.tab)] = "";
+                }
+            }
+        } else if (copy || from.tab !== to.tab) {
+            if (from.tab === to.tab) {
+                if (from.row >= to.row) {
+                    from.row += 1;
+                }
+                if (to.row >= from.row) {
+                    to.row += 1;
+                }
+            }
+            empty = Math.max(from.row, to.row) + 1;
+            ref = commander.fleet;
+            for (k in ref) {
+                v = ref[k];
+                ref1 = fromFleetKey(k), row = ref1[0], col = ref1[1], tab = (ref2 = ref1[2]) != null ? ref2 : null;
+                if (row === null || col === null) {
+                    continue;
+                }
+                if (tab === to.tab) {
+                    if (!isNaN(row) && row >= empty) {
+                        if (get.is_empty_fleet(row, tab)) {
+                            empty = +row;
+                            break;
+                        } else {
+                            empty = +row + 1;
+                        }
+                    }
+                }
+            }
+            this.insert_fleet({
+                row: empty,
+                tab: to.tab
+            }, {
+                row: to.row,
+                tab: to.tab
+            });
+            this.insert_fleet(from, to, copy);
+        } else {
+            dir = Math.sign(to.row - from.row);
+            moving = {
+                name: commander.fleet.ais[getAIKey(from.row, from.tab)],
+                specs: []
+            };
+            for (i = l = 0; l < 10; i = ++l) {
+                moving.specs[i] = commander.fleet[getFleetKey(from.row, i, from.tab)];
+            }
+            for (i = m = ref3 = from.row + dir, ref4 = to.row; ref3 <= ref4 ? m <= ref4 : m >= ref4; i = ref3 <= ref4 ? ++m : --m) {
+                this.copy_fleet({
+                    row: i,
+                    tab: from.tab
+                }, {
+                    row: i - dir,
+                    tab: from.tab
+                });
+            }
+            commander.fleet.ais[getAIKey(to.row, to.tab)] = moving.name;
+            for (i = n = 0; n < 10; i = ++n) {
+                commander.fleet[getFleetKey(to.row, i, to.tab)] = moving.specs[i];
+            }
+        }
+        return control.savePlayer();
+    },
+
+    remove_fleet: function (path) {
+        from = compare_obj(path, _fleet);
+        check_list([String, Number], [path.tab, path.row]);
+        var c, i, j, k, lastRow, r, ref, ref1, ref2, ref3, t, v, row = path.row, tab = path.tab;
+        
+        if (tab == null) {
+            tab = null;
+        }
+        lastRow = row;
+        ref = commander.fleet;
+        for (k in ref) {
+            v = ref[k];
+            ref1 = fromFleetKey(k), r = ref1[0], c = ref1[1], t = ref1[2];
+            if (r === null || c === null) {
+                continue;
+            }
+            if (tab === t) {
+                if (!isNaN(r) && +r > lastRow) {
+                    lastRow = +r;
+                }
+            }
+        }
+        for (i = j = ref2 = row + 1, ref3 = lastRow + 1; ref2 <= ref3 ? j <= ref3 : j >= ref3; i = ref2 <= ref3 ? ++j : --j) {
+            this.copy_fleet({
+                row: i,
+                tab: tab
+            }, {
+                row: i - 1,
+                tab: tab
+            });
+        }
+        if (commander.fleet.selection.row > row) {
+            return commander.fleet.selection.row -= 1;
+        }
+    },
+
     //network.send("stopOrder");
 
     //network.send("holdPositionOrder");
@@ -302,11 +424,11 @@ var get = {
      * @param {object} path - fleet path
      * @return {string} - fleet name
      */
-    fleet_name: function (path) {
+    fleet_path: function (path) {
         check(Object, path);
         path = compare_obj(path, _fleet);
 
-        return commander.fleet.ais[`${path.row},${path.tab}`];
+        return commander.fleet.ais[getAIKey[path.row, path.tab]];
     },
 
     /**
@@ -315,7 +437,7 @@ var get = {
      * @param {string} name - fleet name
      * @return {object} - fleet path
      */
-    fleet_path: function (name) {
+    fleet_name: function (name) {
         name = check(String, name);
         let fleet, fleet_name, ref;
 
@@ -414,6 +536,38 @@ var get = {
     current_fleet_path: function () {
         return commander.fleet.selection;
     },
+
+    is_empty_spec: function (spec) {
+        var error;
+        if (!spec) {
+            return true;
+        }
+        try {
+            spec = JSON.parse(spec);
+        } catch (error) {
+            return true;
+        }
+        if (spec.parts == null) {
+            return true;
+        }
+        if (spec.parts.length === 0) {
+            return true;
+        }
+        return false;
+    },
+
+    is_empty_fleet: function (row, tab) {
+        var i, j;
+        if (commander.fleet.ais[getAIKey(row, tab)]) {
+            return false;
+        }
+        for (i = j = 0; j < 10; i = ++j) {
+            if (!get.is_empty_spec(commander.fleet[getFleetKey(row, i, tab)])) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 //-----------------------------------------------------------------------------

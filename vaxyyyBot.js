@@ -644,11 +644,16 @@ let memory = {
         }
         if (obj[lastPath] === undefined) obj[lastPath] = data;
         if (type === "add") {
-            obj[lastPath] += data;
+            return obj[lastPath] += data;
         } else if (type === "subtract") {
-            obj[lastPath] -= data;
+            return obj[lastPath] -= data;
         } else if (type === "set") {
-            obj[lastPath] = data;
+            return obj[lastPath] = data;
+        } else if (type === "push") {
+            if (Array.isArray(obj[lastPath])) {
+                return obj[lastPath].push(data);
+            }
+            else throw new Error("can not push data");
         } else throw new Error("no valid type selected");
     },
 

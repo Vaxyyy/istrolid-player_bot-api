@@ -2,7 +2,7 @@
  * This is an javascript player bot api for istrolid
  */
 
-let hook = hook || {
+var hook = hook || {
     timer: setInterval(() => vaxyyyBot.tick(), 60)
 };
 
@@ -14,7 +14,7 @@ let _fleet = {
 //-----------------------------------------------------------------------------
 // Controls, stores and runs the bots
 /** @namespace */
-let vaxyyyBot = vaxyyyBot || {
+var vaxyyyBot = vaxyyyBot || {
 
     bots: [],
     enabled: false,
@@ -24,9 +24,7 @@ let vaxyyyBot = vaxyyyBot || {
     last_msg: {},
     current_bot: {},
     self: {},
-    last_server: {
-        name: ""
-    },
+    last_server_name:  "",
 
     tick: function () {
         let queue, i, bot, data;
@@ -49,23 +47,24 @@ let vaxyyyBot = vaxyyyBot || {
                     network.send(`mouseMove`, [0, 0], false);
                 }
 
-                if (vaxyyyBot.last_server.name === battleMode.serverName) return
-                vaxyyyBot.last_server = battleMode;
-                for (i in vaxyyyBot.bots) {
-                    bot = vaxyyyBot.bots[i];
-                    try {
+                if (vaxyyyBot.last_server_name !== battleMode.serverName) {
+                    for (i = 0; i < vaxyyyBot.bots.length; i++) {
+                        bot = vaxyyyBot.bots[i];
                         setTimeout(() => { // just so has time to load in
-                            if (bot && typeof bot.join === "function") {
-                                vaxyyyBot.current_bot = bot;
-                                bot.join();
+                            try {
+                                if (bot && typeof bot.join === "function") {
+                                    vaxyyyBot.current_bot = bot;
+                                    bot.join();
+                                }
+                            } catch (e) {
+                                console.error(e.stack);
                             }
-                        }, 5000);
-                    } catch (e) {
-                        console.error(e.stack);
+                        }, 6000);
                     }
+                    vaxyyyBot.last_server_name = battleMode.serverName;
                 }
             } else if (vaxyyyBot.step % 8 === 0) { // 480 ticks
-                for (i in vaxyyyBot.bots) {
+                for (i = 0; i < vaxyyyBot.bots.length; i++) {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
@@ -120,7 +119,7 @@ let vaxyyyBot = vaxyyyBot || {
 //-----------------------------------------------------------------------------
 // Funtions that let your bot do stuff
 /** @namespace */
-let order = {
+var order = {
     /**
      * Sends a chat message
      *
@@ -440,7 +439,7 @@ let order = {
 //-----------------------------------------------------------------------------
 // Funtions that let you check stuff for bot
 /** @namespace */
-let get = {
+var get = {
     /**
      * Gets name of fleet
      *
@@ -611,7 +610,7 @@ let get = {
 //-----------------------------------------------------------------------------
 // Funtions and storage for bots memory
 /** @namespace */
-let memory = {
+var memory = {
 
     data: {},
 
@@ -698,7 +697,7 @@ let memory = {
 //-----------------------------------------------------------------------------
 // IstroStats api Funtions
 
-let istroStats_api = {
+var istroStats_api = {
     /**
      * pull data from istrostats.r26.me
      * see https://github.com/Rio6/IstroStats/blob/master/README.md for use

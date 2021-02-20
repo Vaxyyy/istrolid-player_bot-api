@@ -19,19 +19,21 @@ var vaxyyyBot = vaxyyyBot || {
     bots: [],
     enabled: false,
     anti_afk: false, // dose what it says stops you from been afk or disconnecting
+    reload: false,
     step: 0,
     messageQueue: [],
     last_msg: {},
     current_bot: {},
     self: {},
-    last_server_name:  "",
+    last_server_name: "",
 
     tick: function () {
         let queue, i, bot, data;
         if (vaxyyyBot.enabled) {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
-            if (vaxyyyBot.step % 192 === 0) { // 11,520 ticks
+            if (vaxyyyBot.step % 1152 === 0) { // 69,120 ticks
+                if (vaxyyyBot.reload) order.join_server(battleMode.serverName);
                 memory.root_save(); // saves memory
             } else if (vaxyyyBot.step % 17 === 0) { // 1,020 ticks
                 queue = vaxyyyBot.messageQueue[0];
@@ -50,16 +52,16 @@ var vaxyyyBot = vaxyyyBot || {
                 if (vaxyyyBot.last_server_name !== battleMode.serverName) {
                     for (i = 0; i < vaxyyyBot.bots.length; i++) {
                         bot = vaxyyyBot.bots[i];
-                        setTimeout(() => { // just so has time to load in
-                            try {
+                        try {
+                            setTimeout(() => { // just so has time to load in
                                 if (bot && typeof bot.join === "function") {
                                     vaxyyyBot.current_bot = bot;
                                     bot.join();
                                 }
-                            } catch (e) {
-                                console.error(e.stack);
-                            }
-                        }, 6000);
+                            }, 8000);
+                        } catch (e) {
+                            console.error(e.stack);
+                        }
                     }
                     vaxyyyBot.last_server_name = battleMode.serverName;
                 }
@@ -90,8 +92,9 @@ var vaxyyyBot = vaxyyyBot || {
     },
 
     add_bot: function (bot) {
+        if (memory.data[bot.name] === undefined) memory.data[bot.name] = {};
         let data = Object.assign({
-            memory: memory.data[bot.name] = {},
+            memory: memory.data[bot.name],
             self: vaxyyyBot.self
         }, bot);
         try {

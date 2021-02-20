@@ -42,37 +42,38 @@ let vaxyyyBot = vaxyyyBot || {
                     vaxyyyBot.messageQueue.shift();
                 }
                 if (vaxyyyBot.anti_afk) {
-                    if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) return rootNet.connect();
+                    if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) rootNet.connect();
                     network.send(`mouseMove`, [0, 0], false);
                 }
-            } else if (vaxyyyBot.step % 8 === 0) { // 480 ticks
                 for (i in vaxyyyBot.bots) {
+                    bot = vaxyyyBot.bots[i];
+                    try {
+                        if (bot && typeof bot.join === "function") {
+                            vaxyyyBot.current_bot = bot;
+                            bot.join();
+                        }
+                    } catch (e) {
+                        console.error(e.stack);
+                    }
+                }
+            } else if (vaxyyyBot.step % 8 === 0) { // 480 ticks
+                for (i in vaxyyyBot.bots) { 
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
                             vaxyyyBot.current_bot = bot;
                             bot.run();
                         }
-                    } catch (e) {
-                        console.error(e);
-                    }
-                }
-
-                data = chat.lines[chat.lines.length - 1];
-                if (data === undefined) return;
-                if (vaxyyyBot.last_msg === data) return;
-                vaxyyyBot.last_msg = data;
-
-
-                for (i in vaxyyyBot.bots) { 
-                    bot = vaxyyyBot.bots[i];
-                    try {
                         if (bot && typeof bot.message === "function") {
+                            data = chat.lines[chat.lines.length - 1];
+                            if (data === undefined) return;
+                            if (vaxyyyBot.last_msg === data) return;
+                            vaxyyyBot.last_msg = data;
                             vaxyyyBot.current_bot = bot;
                             bot.message(data);
                         }
                     } catch (e) {
-                        console.error(e);
+                        console.error(e.stack);
                     }
                 }
             }
@@ -82,20 +83,24 @@ let vaxyyyBot = vaxyyyBot || {
     },
 
     add_bot: function (bot) {
+        let data = Object.assign({
+            memory: memory.data[bot.name] = {},
+            self: vaxyyyBot.self
+        }, bot);
         try {
             if (bot && bot.start !== undefined && typeof bot.start === "function") {
                 vaxyyyBot.current_bot = bot;
+                bot.start = bot.start.bind(data);
                 bot.start();
             }
         } catch (e) {
-            console.error(e);
+            console.error(e.stack);
         }
-        data = Object.assign({
-            memory: memory.data[bot.name] = {},
-            self: vaxyyyBot.self
-        }, bot)
+        
         if (bot.message) bot.message = bot.message.bind(data);
         if (bot.run) bot.run = bot.run.bind(data);
+        if (bot.join) bot.join = bot.join.bind(data);
+
         vaxyyyBot.bots.push(bot);
     },
 
@@ -576,7 +581,7 @@ let get = {
      *
      * @return {boolean}
      */
-    is_empty_fleet: function (row, tab) {
+    is_empty_fleet: function (path) {
         from = compare_obj(path, _fleet);
         check_list([String, Number], [path.tab, path.row]);
         let i, j, row = path.row, tab = path.tab;

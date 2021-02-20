@@ -30,7 +30,9 @@ let vaxyyyBot = vaxyyyBot || {
         if (vaxyyyBot.enabled) {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
-            if (vaxyyyBot.step % 48 === 0) {} else if (vaxyyyBot.step % 17 === 0) {
+            if (vaxyyyBot.step % 192 === 0) { // 11,520 ticks
+                memory.root_save(); // saves memory
+            } else if (vaxyyyBot.step % 17 === 0) { // 1,020 ticks
                 queue = vaxyyyBot.messageQueue[0];
                 if (queue) {
                     rootNet.send("message", {
@@ -43,7 +45,7 @@ let vaxyyyBot = vaxyyyBot || {
                     if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) return rootNet.connect();
                     network.send(`mouseMove`, [0, 0], false);
                 }
-            } else if (vaxyyyBot.step % 8 === 0) {
+            } else if (vaxyyyBot.step % 8 === 0) { // 480 ticks
                 for (i in vaxyyyBot.bots) {
                     bot = vaxyyyBot.bots[i];
                     try {
@@ -62,7 +64,7 @@ let vaxyyyBot = vaxyyyBot || {
                 vaxyyyBot.last_msg = data;
 
 
-                for (i in vaxyyyBot.bots) {
+                for (i in vaxyyyBot.bots) { 
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.message === "function") {

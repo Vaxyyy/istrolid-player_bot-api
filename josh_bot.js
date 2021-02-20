@@ -1,9 +1,27 @@
 vaxyyyBot.clear_bots();
-memory.root_load();
+
+//memory.root_load();
 
 vaxyyyBot.add_bot({
     name: "josh", // this is josh bot :)
-    message: function (data) {
+    start: async function () {
+        let i, obj, winrate = await istroStats_api.GET(`winrate/?name=${commander.name}`);
+
+        for (i in winrate) {
+            obj = winrate[i];
+            memory.write(["games", "total"], "add", obj.games);
+            memory.write(["games", i, "wins"], "set", obj.wins);
+            memory.write(["games", i, "loss"], "set", obj.games - obj.wins);
+        }
+    },
+    join: async function () {
+        if (battleMode.serverName === "Istroverse (KevX)") {
+            memory.write(["istroverse", "alliances", "joined"], "set", false);
+            memory.write(["istroverse", "alliances", "name"], "set", "");
+            order.send_message("!alliance");
+        }
+    },
+    message: async function (data) {
         let {
             text,
             name,
@@ -28,17 +46,12 @@ vaxyyyBot.add_bot({
                     if (text === "Game is about to start!") {
                         order.send_message("glhf");
                     } else if (text.includes("has won")) {
+                        let win_or_loss = text.includes(commander.side) ? "win" : "loss";
                         order.send_message("ggwp");
                         memory.write(["games", "total"], "add", 1);
-                        if (text.includes(commander.side)) {
-                            memory.write(["games", sim.serverType, "wins"], "add", 1);
-                        } else {
-                            memory.write(["games", sim.serverType, "loss"], "add", 1);
-                        }
+                        memory.write(["games", sim.serverType, win_or_loss], "add", 1);
                     } else if (text === "Game ends in a draw!") {
                         order.send_message("wp");
-                        memory.write(["games", "total"], "add", 1);
-                        memory.write(["games", sim.serverType, "draw"], "add", 1);
                     } else if (text.includes("does not have enough players.")) {
                         order.send_message("uh...");
                     }
@@ -48,32 +61,39 @@ vaxyyyBot.add_bot({
                     }
                     */
                     if (battleMode.serverName === "Istroverse (KevX)") {
-                        if (alliances.joined) {
+                        if (this.memory.istroverse.alliances.joined) {
+                            let alliance_name = this.memory.istroverse.alliances.name
                             if (text.includes("has created")) {
-                                sendMessage("A rivalry alliance");
+                                order.send_message("A rivalry alliance");
                             } else if (text.includes(`${commander.name} has been invited to`)) {
-                                if (args[4] === alliances.name) {
-                                    sendMessage(`Im already in your alliance`);
+                                if (args[4] === alliance_name) {
+                                    order.send_message(`Im already in your alliance`);
                                 } else {
-                                    sendMessage(`Sorry im in the "${alliances.name}" alliance`);
+                                    order.send_message(`Sorry im in the "${alliance_name}" alliance`);
                                 }
-                            } else if (text.includes(`${commander.name} has been kicked from ${alliances.name}`)) {
-                                alliances.joined = false;
-                                alliances.name = "";
-                                sendMessage("Cya, thanks for having me");
-                            } else if (text.includes(`has disbanded ${alliances.name}`)) {
-                                alliances.joined = false;
-                                alliances.name = "";
-                                sendMessage("Bye alliances");
+                            } else if (text.includes(`${commander.name} has been kicked from ${alliance_name}`)) {
+                                memory.write(["istroverse", "alliances", "joined"], "set", false);
+                                memory.write(["istroverse", "alliances", "name"], "set", "");
+                                order.send_message("Cya, thanks for having me");
+                            } else if (text.includes(`has disbanded ${alliance_name}`)) {
+                                memory.write(["istroverse", "alliances", "joined"], "set", false);
+                                memory.write(["istroverse", "alliances", "name"], "set", "");
+                                order.send_message("Bye alliance");
                             }
                         } else {
+                            if (text.includes(`${commander.name}, your alliance is`)) {
+                                console.log(text, args, args[4]);
+                                memory.write(["istroverse", "alliances", "joined"], "set", true);
+                                memory.write(["istroverse", "alliances", "name"], "set", args[3]);
+                                order.send_message("Oh, forgot I was in an alliance");
+                            }
                             if (text.includes("has created")) {
-                                sendMessage("new clan, nice");
+                                order.send_message("new clan, nice");
                             } else if (text.includes(`${commander.name} has been invited to`)) {
-                                alliances.name = args[4];
-                                alliances.joined = true;
-                                sendMessage("Ok, i will join :)");
-                                sendMessage("!join " + alliances.name);
+                                memory.write(["istroverse", "alliances", "joined"], "set", true);
+                                memory.write(["istroverse", "alliances", "name"], "set", args[4]);
+                                order.send_message("Ok, i will join :)");
+                                order.send_message("!join " + alliance_name);
                             }
                         }
                     }
@@ -85,13 +105,12 @@ vaxyyyBot.add_bot({
             } else if (name === commander.name) {
 
             } else {
-                
+                // ["hi", "hey", "hello", "Hi there!", "Howdy"],
+                //if (test.includes())
             }
-
-            memory.root_save(); // 10/10 should not run this as like this big bad
         }
     },
-    run: function () {},
+    run: async function () {}
 });
 
 vaxyyyBot.enabled = true;

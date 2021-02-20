@@ -449,7 +449,7 @@ var get = {
      * @param {object} path - fleet path
      * @return {string} - fleet name
      */
-    fleet_path: function (path) {
+    fleet_name_from_path: function (path) {
         check(Object, path);
         path = compare_obj(path, _fleet);
 
@@ -462,7 +462,7 @@ var get = {
      * @param {string} name - fleet name
      * @return {object} - fleet path
      */
-    fleet_name: function (name) {
+    fleet_path_from_name: function (name) {
         name = check(String, name);
         let fleet, fleet_name, ref;
 

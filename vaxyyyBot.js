@@ -24,6 +24,9 @@ let vaxyyyBot = vaxyyyBot || {
     last_msg: {},
     current_bot: {},
     self: {},
+    last_server: {
+        name: ""
+    },
 
     tick: function () {
         let queue, i, bot, data;
@@ -45,19 +48,24 @@ let vaxyyyBot = vaxyyyBot || {
                     if (!rootNet && rootNet.websocket.readyState === WebSocket.CLOSED) rootNet.connect();
                     network.send(`mouseMove`, [0, 0], false);
                 }
+
+                if (vaxyyyBot.last_server.name === battleMode.serverName) return
+                vaxyyyBot.last_server = battleMode;
                 for (i in vaxyyyBot.bots) {
                     bot = vaxyyyBot.bots[i];
                     try {
-                        if (bot && typeof bot.join === "function") {
-                            vaxyyyBot.current_bot = bot;
-                            bot.join();
-                        }
+                        setTimeout(() => { // just so has time to load in
+                            if (bot && typeof bot.join === "function") {
+                                vaxyyyBot.current_bot = bot;
+                                bot.join();
+                            }
+                        }, 5000);
                     } catch (e) {
                         console.error(e.stack);
                     }
                 }
             } else if (vaxyyyBot.step % 8 === 0) { // 480 ticks
-                for (i in vaxyyyBot.bots) { 
+                for (i in vaxyyyBot.bots) {
                     bot = vaxyyyBot.bots[i];
                     try {
                         if (bot && typeof bot.run === "function") {
@@ -96,7 +104,7 @@ let vaxyyyBot = vaxyyyBot || {
         } catch (e) {
             console.error(e.stack);
         }
-        
+
         if (bot.message) bot.message = bot.message.bind(data);
         if (bot.run) bot.run = bot.run.bind(data);
         if (bot.join) bot.join = bot.join.bind(data);
@@ -377,7 +385,8 @@ let order = {
     remove_fleet: function (path) {
         from = compare_obj(path, _fleet);
         check_list([String, Number], [path.tab, path.row]);
-        let c, i, j, k, lastRow, r, ref, ref1, ref2, ref3, t, v, row = path.row, tab = path.tab;
+        let c, i, j, k, lastRow, r, ref, ref1, ref2, ref3, t, v, row = path.row,
+            tab = path.tab;
 
         if (tab == null) {
             tab = null;
@@ -584,7 +593,8 @@ let get = {
     is_empty_fleet: function (path) {
         from = compare_obj(path, _fleet);
         check_list([String, Number], [path.tab, path.row]);
-        let i, j, row = path.row, tab = path.tab;
+        let i, j, row = path.row,
+            tab = path.tab;
 
         if (commander.fleet.ais[getAIKey(row, tab)]) {
             return false;
@@ -659,8 +669,7 @@ let memory = {
         } else if (type === "push") {
             if (Array.isArray(obj[lastPath])) {
                 return obj[lastPath].push(data);
-            }
-            else throw new Error("can not push data");
+            } else throw new Error("can not push data");
         } else throw new Error("no valid type selected");
     },
 

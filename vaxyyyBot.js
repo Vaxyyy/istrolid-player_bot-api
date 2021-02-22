@@ -19,7 +19,6 @@ var vaxyyyBot = vaxyyyBot || {
     bots: [],
     enabled: false,
     anti_afk: false, // dose what it says stops you from been afk or disconnecting
-    reload: false,
     step: 0,
     messageQueue: [],
     last_msg: {},
@@ -33,7 +32,6 @@ var vaxyyyBot = vaxyyyBot || {
             vaxyyyBot.self = commander;
             vaxyyyBot.step++;
             if (vaxyyyBot.step % 1152 === 0) { // 69,120 ticks
-                if (vaxyyyBot.reload) order.join_server(battleMode.serverName);
                 memory.root_save(); // saves memory
             } else if (vaxyyyBot.step % 17 === 0) { // 1,020 ticks
                 queue = vaxyyyBot.messageQueue[0];
